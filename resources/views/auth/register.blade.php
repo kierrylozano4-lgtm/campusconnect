@@ -1,0 +1,4 @@
+@extends('layouts.app')
+@section('content')
+<section class="auth-card"><p class="eyebrow">Join the network</p><h1>Create your account</h1><p class="muted">Your student ID is generated automatically. You can complete your profile next.</p><form method="POST" action="{{ route('register') }}" class="form-stack">@csrf<label>Full name<input type="text" name="full_name" value="{{ old('full_name') }}" required autofocus></label><label>Email address<input type="email" name="email" value="{{ old('email') }}" required></label><label>Password<input type="password" name="password" required></label><label>Confirm password<input type="password" name="password_confirmation" required></label><button class="button" type="submit">Create account</button></form><p class="form-foot">Already a member? <a class="text-link" href="{{ route('login') }}">Log in</a></p></section>
+@endsection

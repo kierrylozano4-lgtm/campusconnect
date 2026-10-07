@@ -1,0 +1,4 @@
+@extends('layouts.app')
+@section('content')
+<section class="chat-shell"><div class="section-heading"><div><p class="eyebrow">Conversation</p><h1>{{ $serviceRequest->service->title }}</h1><p class="muted">Chatting with {{ $otherUser->full_name }} · {{ $serviceRequest->status }}</p></div><a class="text-link" href="{{ route('dashboard') }}">Back to marketplace</a></div><div class="messages">@forelse($messages as $message)<div class="message {{ $message->sender_id === auth()->id() ? 'mine' : '' }}"><p>{{ $message->message }}</p><small>{{ $message->created_at->format('M j, g:i A') }}</small></div>@empty<p class="muted empty">No messages yet. Start the conversation.</p>@endforelse</div><form class="message-form" method="POST" action="{{ route('chat.store', $serviceRequest) }}">@csrf<input name="message" placeholder="Write a message..." required maxlength="5000" autofocus><button class="button" type="submit">Send</button></form></section>
+@endsection
