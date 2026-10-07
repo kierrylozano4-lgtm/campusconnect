@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -94,10 +95,41 @@ class DashboardController extends Controller
 
     public function updateRequest(Request $request, ServiceRequest $serviceRequest)
     {
-        abort_unless(in_array($request->user()->id, [$serviceRequest->requester_id, $serviceRequest->provider_id], true), 403);
+        $data = $request->validate(['status' => ['required', 'in:Accepted,Ongoing,Declined,Completed,Cancelled']]);
 
-        $data = $request->validate(['status' => ['required', 'in:Accepted,Ongoing,Declined,Completed']]);
-        $serviceRequest->update(['status' => $data['status']]);
+        $updated = DB::transaction(function () use ($request, $serviceRequest, $data): bool {
+            $lockedRequest = ServiceRequest::query()->lockForUpdate()->findOrFail($serviceRequest->id);
+            $userId = $request->user()->id;
+
+            abort_unless(in_array($userId, [$lockedRequest->requester_id, $lockedRequest->provider_id], true), 403);
+
+            $isProvider = $userId === $lockedRequest->provider_id;
+            $allowedStatuses = match ($lockedRequest->status) {
+                'Pending' => $isProvider ? ['Accepted', 'Ongoing', 'Declined'] : ['Cancelled'],
+                'Accepted' => ['Completed', ...($isProvider ? ['Ongoing', 'Declined'] : [])],
+                'Ongoing' => ['Completed'],
+                default => [],
+            };
+
+            if (! in_array($data['status'], $allowedStatuses, true)) {
+                return false;
+            }
+
+            $lockedRequest->update(['status' => $data['status']]);
+
+            Notification::create([
+                'user_id' => $isProvider ? $lockedRequest->requester_id : $lockedRequest->provider_id,
+                'message' => 'The request for '.$lockedRequest->service->title.' is now '.$data['status'].'.',
+                'link' => route('chat.show', $lockedRequest),
+                'is_read' => false,
+            ]);
+
+            return true;
+        });
+
+        if (! $updated) {
+            return back()->withErrors(['status' => 'That request status change is not allowed.']);
+        }
 
         return back()->with('status', 'Request status updated.');
     }

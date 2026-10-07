@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Review;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -60,6 +61,15 @@ class ProfileController extends Controller
         ]));
 
         return back()->with('status', 'Review submitted successfully.');
+    }
+
+    public function markNotificationAsRead(Request $request, Notification $notification)
+    {
+        abort_unless($notification->user_id === $request->user()->id, 403);
+
+        $notification->update(['is_read' => true]);
+
+        return redirect()->route('profile.edit', ['tab' => 'notifications'])->with('status', 'Notification marked as read.');
     }
 
     private function profileView(Request $request, User $profileUser)

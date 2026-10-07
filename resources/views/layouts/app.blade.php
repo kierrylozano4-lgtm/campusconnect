@@ -10,7 +10,7 @@
     <header class="topbar">
         <a class="brand" href="{{ auth()->check() ? route('dashboard') : route('home') }}"><span>CC</span> CampusConnect</a>
         @auth
-            <nav class="nav-links"><a class="nav-active" href="{{ route('dashboard') }}">Marketplace</a><a href="{{ route('leaderboard') }}">Leaderboard</a><a href="{{ route('profile.edit') }}">Profile</a>@if(auth()->user()->is_admin)<a href="{{ route('admin.index') }}">Admin</a>@endif<a href="{{ route('account.setup') }}">Setup</a><form method="POST" action="{{ route('logout') }}">@csrf<button class="link-button" type="submit">Log out</button></form></nav>
+            <nav class="nav-links"><a class="nav-active" href="{{ route('dashboard') }}">Marketplace</a><a href="{{ route('leaderboard') }}">Leaderboard</a><a href="{{ route('profile.edit') }}">Profile</a><a href="{{ route('profile.edit', ['tab' => 'notifications']) }}">Notifications ({{ auth()->user()->notifications()->where('is_read', false)->count() }})</a>@if(auth()->user()->is_admin)<a href="{{ route('admin.index') }}">Admin</a>@endif<a href="{{ route('account.setup') }}">Setup</a><form method="POST" action="{{ route('logout') }}">@csrf<button class="link-button" type="submit">Log out</button></form></nav>
         @else
             <nav class="nav-links"><a href="{{ route('login') }}">Log in</a><a class="button button-small" href="{{ route('register') }}">Join campus</a></nav>
         @endauth

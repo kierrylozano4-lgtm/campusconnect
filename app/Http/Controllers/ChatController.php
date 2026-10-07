@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Message;
+use App\Models\Notification;
 use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
 
@@ -29,6 +30,13 @@ class ChatController extends Controller
             'sender_id' => $request->user()->id,
             'receiver_id' => $receiverId,
             'message' => $data['message'],
+        ]);
+
+        Notification::create([
+            'user_id' => $receiverId,
+            'message' => 'New message from '.$request->user()->full_name.' about '.$serviceRequest->service->title.'.',
+            'link' => route('chat.show', $serviceRequest),
+            'is_read' => false,
         ]);
 
         return back();

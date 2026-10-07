@@ -37,7 +37,7 @@ class AdminServiceModerationTest extends TestCase
                 'service_ids' => [$serviceA->id, $serviceB->id],
                 'status' => 'Inactive',
                 'inactive_reason' => 'Policy review required',
-                'visible_in_dashboard' => false,
+                'hide_from_marketplace' => true,
             ])
             ->assertRedirect();
 
@@ -73,5 +73,17 @@ class AdminServiceModerationTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseMissing('services', ['id' => $service->id]);
+    }
+
+    public function test_admin_can_delete_another_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $user))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 }

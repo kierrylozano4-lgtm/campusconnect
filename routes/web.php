@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/notifications/{notification}/read', [ProfileController::class, 'markNotificationAsRead'])->name('notifications.read');
     Route::get('/account/setup', [ProfileController::class, 'setup'])->name('account.setup');
     Route::put('/account/setup', [ProfileController::class, 'saveSetup'])->name('account.setup.save');
     Route::post('/requests/{serviceRequest}/review', [ProfileController::class, 'storeReview'])->name('reviews.store');
@@ -35,8 +36,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'index'])->name('index');
     Route::patch('/users/{user}/role', [AdminController::class, 'toggleRole'])->name('users.role');
     Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
-    Route::patch('/services/{service}', [AdminController::class, 'toggleService'])->name('services.toggle');
     Route::patch('/services/bulk', [AdminController::class, 'bulkToggleServices'])->name('services.bulk');
+    Route::patch('/services/{service}', [AdminController::class, 'toggleService'])->name('services.toggle');
     Route::delete('/services/{service}', [AdminController::class, 'destroyService'])->name('services.destroy');
     Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])->name('announcements.store');
 });
