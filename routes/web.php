@@ -17,6 +17,7 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('guest
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/services/{service}', [DashboardController::class, 'showService'])->name('services.show');
     Route::post('/services', [DashboardController::class, 'storeService'])->name('services.store');
     Route::post('/services/{service}/request', [DashboardController::class, 'requestService'])->name('services.request');
     Route::patch('/requests/{serviceRequest}', [DashboardController::class, 'updateRequest'])->name('requests.update');

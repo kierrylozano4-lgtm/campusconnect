@@ -8,6 +8,7 @@ use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
@@ -28,7 +29,7 @@ class DashboardController extends Controller
         $incoming = ServiceRequest::with(['service', 'requester'])->where('provider_id', $user->id)->latest()->get();
         $outgoing = ServiceRequest::with(['service', 'provider'])->where('requester_id', $user->id)->latest()->get();
 
-        return view('dashboard.index', [
+        return view('dashboard.marketplace', [
             'services' => $services,
             'incoming' => $incoming,
             'outgoing' => $outgoing,
@@ -43,14 +44,27 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function showService(Service $service)
+    {
+        abort_unless($service->status === 'Active' && $service->visible_in_dashboard, 404);
+
+        $service->load('user');
+
+        return view('services.show', compact('service'));
+    }
+
     public function storeService(Request $request)
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:150'],
             'category' => ['required', 'in:Academic,Personal,Tech'],
             'description' => ['required', 'string', 'max:5000'],
+            'price' => [Rule::requiredIf(fn (): bool => ! $request->boolean('price_negotiable')), 'nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'price_negotiable' => ['sometimes', 'boolean'],
+            'price_note' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $data['price_negotiable'] = $request->boolean('price_negotiable');
         $request->user()->services()->create($data);
 
         return back()->with('status', 'Campus service posted successfully.');
@@ -62,12 +76,17 @@ class DashboardController extends Controller
         abort_if($service->status !== 'Active', 422, 'This service is inactive.');
         abort_if(! $service->visible_in_dashboard, 404);
 
-        $exists = ServiceRequest::where('service_id', $service->id)
+        $existingRequest = ServiceRequest::where('service_id', $service->id)
             ->where('requester_id', $request->user()->id)
             ->whereIn('status', ['Pending', 'Accepted', 'Ongoing', 'Completed'])
-            ->exists();
+            ->latest()
+            ->first();
 
-        if ($exists) {
+        if ($existingRequest) {
+            if ($request->boolean('start_chat')) {
+                return redirect()->route('chat.show', $existingRequest);
+            }
+
             return back()->withErrors(['service' => 'You already requested this service.']);
         }
 
@@ -89,6 +108,10 @@ class DashboardController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        if ($request->boolean('start_chat')) {
+            return redirect()->route('chat.show', $serviceRequest)->with('status', 'Your chat is ready. A service request was sent to the provider.');
+        }
 
         return back()->with('status', 'Your service request was sent.');
     }

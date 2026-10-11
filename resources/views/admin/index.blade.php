@@ -11,7 +11,7 @@
                 <span class="status {{ $user->is_admin ? 'ongoing' : 'pending' }}">{{ $user->is_admin ? 'Admin' : 'Member' }}</span>
                 @if(!$user->is(auth()->user()))
                     <form method="POST" action="{{ route('admin.users.role', $user) }}">@csrf @method('PATCH')<button class="button button-small" type="submit">{{ $user->is_admin ? 'Demote' : 'Make admin' }}</button></form>
-                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}">@csrf @method('DELETE')<button class="text-link" type="submit">Delete</button></form>
+                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}">@csrf @method('DELETE')<button class="button button-small button-danger" type="submit">Delete</button></form>
                 @endif
             </div>
         </div>
@@ -38,7 +38,7 @@
                     <input type="hidden" name="inactive_reason" value="Moderated by administrator">
                     <button class="button button-small" type="submit">{{ $service->status === 'Active' ? 'Deactivate' : 'Activate' }}</button>
                 </form>
-                <form method="POST" action="{{ route('admin.services.destroy', $service) }}">@csrf @method('DELETE')<button class="text-link" type="submit">Delete</button></form>
+                <form method="POST" action="{{ route('admin.services.destroy', $service) }}">@csrf @method('DELETE')<button class="button button-small button-danger" type="submit">Delete</button></form>
             </div>
         </div>
     @endforeach
