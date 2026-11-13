@@ -35,6 +35,9 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('index');
+    Route::get('/users', [AdminController::class, 'users'])->name('users.index');
+    Route::get('/services', [AdminController::class, 'services'])->name('services.index');
+    Route::patch('/users/bulk', [AdminController::class, 'bulkUpdateUsers'])->name('users.bulk');
     Route::patch('/users/{user}/role', [AdminController::class, 'toggleRole'])->name('users.role');
     Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
     Route::patch('/services/bulk', [AdminController::class, 'bulkToggleServices'])->name('services.bulk');

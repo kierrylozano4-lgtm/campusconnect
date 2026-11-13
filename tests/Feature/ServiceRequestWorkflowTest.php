@@ -6,11 +6,52 @@ use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ServiceRequestWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_marketplace_uses_the_workspace_sidebar_and_campus_services_feed(): void
+    {
+        $provider = User::factory()->create();
+        Service::create([
+            'user_id' => $provider->id,
+            'title' => 'Calculus tutoring',
+            'category' => 'Academic',
+            'description' => 'Help with calculus.',
+            'status' => 'Active',
+            'visible_in_dashboard' => true,
+        ]);
+
+        $this->actingAs($provider)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('class="workspace-sidebar"', false)
+            ->assertSee('Campus broadcasts')
+            ->assertSee('Campus services feed')
+            ->assertSee('Calculus tutoring')
+            ->assertSee('id="service-post"', false)
+            ->assertSee(route('dashboard').'#incoming-requests', false);
+    }
+
+    public function test_workspace_sidebar_displays_recent_campus_broadcasts(): void
+    {
+        $user = User::factory()->create();
+        DB::table('announcements')->insert([
+            'title' => 'Campus maintenance',
+            'message' => 'The study hall will close early this Friday.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Campus maintenance')
+            ->assertSee('The study hall will close early this Friday.');
+    }
 
     public function test_provider_can_accept_a_pending_request_and_notifies_the_requester(): void
     {

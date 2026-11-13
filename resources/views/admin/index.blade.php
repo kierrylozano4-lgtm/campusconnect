@@ -1,48 +1,67 @@
 @extends('layouts.app')
 @section('content')
-<section class="section-heading"><div><p class="eyebrow">Restricted workspace</p><h1>Admin control center</h1><p class="muted">Manage campus accounts, service listings, and announcements.</p></div><a class="button button-small" href="{{ route('dashboard') }}">Back to marketplace</a></section>
-<div class="admin-stats">@foreach(['users'=>'Campus users','services'=>'Services','requests'=>'Requests','completed'=>'Completed'] as $key => $label)<div class="panel"><span class="eyebrow">{{ $label }}</span><strong>{{ $stats[$key] }}</strong></div>@endforeach</div>
-<div class="profile-grid admin-columns"><section class="panel">
-    <div class="section-title"><h2>User controls</h2><span>{{ $users->count() }} total</span></div>
-    @foreach($users as $user)
-        <div class="admin-row">
-            <div><strong>{{ $user->full_name }}</strong><span>{{ $user->email }} · {{ $user->profile?->course_major ?? 'No course' }}</span></div>
-            <div class="row-actions">
-                <span class="status {{ $user->is_admin ? 'ongoing' : 'pending' }}">{{ $user->is_admin ? 'Admin' : 'Member' }}</span>
-                @if(!$user->is(auth()->user()))
-                    <form method="POST" action="{{ route('admin.users.role', $user) }}">@csrf @method('PATCH')<button class="button button-small" type="submit">{{ $user->is_admin ? 'Demote' : 'Make admin' }}</button></form>
-                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}">@csrf @method('DELETE')<button class="button button-small button-danger" type="submit">Delete</button></form>
-                @endif
-            </div>
-        </div>
-    @endforeach
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Restricted workspace</p>
+        <h1>Management &amp; reports</h1>
+        <p class="muted">Monitor campus activity, manage the marketplace, and keep students informed.</p>
+    </div>
+    <a class="button button-small" href="{{ route('dashboard') }}">Back to marketplace</a>
 </section>
-<section class="panel">
-    <div class="section-title"><h2>Service controls</h2><span>{{ $services->count() }} total</span></div>
-    <form id="bulk-service-form" method="POST" action="{{ route('admin.services.bulk') }}" class="form-stack admin-bulk-form">@csrf @method('PATCH')
-        <div class="bulk-panel">
-            <label>Status<select name="status"><option value="Active">Activate selected</option><option value="Inactive">Deactivate selected</option></select></label>
-            <label>Reason<textarea name="inactive_reason" rows="2" placeholder="Optional moderation reason..."></textarea></label>
-            <label class="check"><input type="checkbox" name="hide_from_marketplace" value="1"> Hide selected services from the marketplace</label>
-            <button class="button button-small" type="submit">Apply to selected</button>
+
+@include('admin._navigation', ['active' => 'home'])
+
+        <div class="admin-stats">
+            @foreach(['users' => 'Total campus users', 'services' => 'Active services', 'requests' => 'Total requests made', 'completed' => 'Completed engagements'] as $key => $label)
+                <div class="panel admin-stat-card admin-stat-{{ $key }}">
+                    <span class="eyebrow">{{ $label }}</span>
+                    <strong>{{ $stats[$key] }}</strong>
+                </div>
+            @endforeach
         </div>
-    </form>
-    @foreach($services as $service)
-        <div class="admin-row admin-service-row">
-            <div class="service-check-wrap"><input type="checkbox" name="service_ids[]" value="{{ $service->id }}" form="bulk-service-form"></div>
-            <div class="service-meta"><strong>{{ $service->title }}</strong><span>by {{ $service->user->full_name }} · {{ $service->status }} @if($service->inactive_reason)· {{ $service->inactive_reason }}@endif</span></div>
-            <div class="row-actions service-actions">
-                <form method="POST" action="{{ route('admin.services.toggle', $service) }}">@csrf @method('PATCH')
-                    <input type="hidden" name="status" value="{{ $service->status === 'Active' ? 'Inactive' : 'Active' }}">
-                    <input type="hidden" name="hide_from_marketplace" value="1">
-                    <input type="hidden" name="inactive_reason" value="Moderated by administrator">
-                    <button class="button button-small" type="submit">{{ $service->status === 'Active' ? 'Deactivate' : 'Activate' }}</button>
-                </form>
-                <form method="POST" action="{{ route('admin.services.destroy', $service) }}">@csrf @method('DELETE')<button class="button button-small button-danger" type="submit">Delete</button></form>
+
+        <section class="panel admin-summary" aria-labelledby="admin-summary-heading">
+            <div>
+                <p class="eyebrow">Platform overview</p>
+                <h2 id="admin-summary-heading">System activity summary</h2>
             </div>
-        </div>
-    @endforeach
-    <div class="section-title announce-title"><h2>Broadcast</h2></div>
-    <form method="POST" action="{{ route('admin.announcements.store') }}" class="form-stack">@csrf<label>Title<input name="title" required maxlength="150"></label><label>Message<textarea name="message" rows="3" required></textarea></label><button class="button" type="submit">Publish announcement</button></form>
-</section></div>
+            <p class="muted">Welcome to the administrative control center. Use the navigation above to manage campus accounts, moderate service listings, and broadcast important updates.</p>
+        </section>
+
+        <section class="admin-quick-links" aria-label="Management areas">
+            <a class="panel admin-quick-link" href="{{ route('admin.users.index') }}">
+                <span class="admin-quick-link-icon" aria-hidden="true">01</span>
+                <span class="admin-quick-link-copy">
+                    <span class="eyebrow">Account access</span>
+                    <strong>Manage users</strong>
+                    <span>Review campus accounts and administrator access.</span>
+                </span>
+                <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="panel admin-quick-link" href="{{ route('admin.services.index') }}">
+                <span class="admin-quick-link-icon" aria-hidden="true">02</span>
+                <span class="admin-quick-link-copy">
+                    <span class="eyebrow">Marketplace moderation</span>
+                    <strong>Manage services</strong>
+                    <span>Moderate listings and update their availability.</span>
+                </span>
+                <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
+            </a>
+        </section>
+
+        <section class="panel admin-section admin-announcement-section" aria-labelledby="admin-announcement-heading">
+            <div class="admin-section-heading">
+                <div>
+                    <p class="eyebrow">Campus updates</p>
+                    <h2 id="admin-announcement-heading">Broadcast an announcement</h2>
+                    <p class="muted">Share an update with the campus community.</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('admin.announcements.store') }}" class="form-stack">
+                @csrf
+                <label>Title<input name="title" required maxlength="150"></label>
+                <label>Message<textarea name="message" rows="3" required></textarea></label>
+                <button class="button" type="submit">Publish announcement</button>
+            </form>
+        </section>
 @endsection

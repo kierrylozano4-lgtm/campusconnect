@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Service;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,14 +14,26 @@ class AdminController extends Controller
     public function index()
     {
         return view('admin.index', [
-            'users' => User::with('profile')->latest()->get(),
-            'services' => Service::with('user')->latest()->get(),
             'stats' => [
                 'users' => User::count(),
-                'services' => Service::count(),
+                'services' => Service::where('status', 'Active')->count(),
                 'requests' => DB::table('service_requests')->count(),
                 'completed' => DB::table('service_requests')->where('status', 'Completed')->count(),
             ],
+        ]);
+    }
+
+    public function users()
+    {
+        return view('admin.users', [
+            'users' => User::with('profile')->latest()->get(),
+        ]);
+    }
+
+    public function services()
+    {
+        return view('admin.services', [
+            'services' => Service::with('user')->latest()->get(),
         ]);
     }
 
@@ -39,6 +53,39 @@ class AdminController extends Controller
         return back()->with('status', 'User deleted.');
     }
 
+    public function bulkUpdateUsers(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['required', 'integer', 'distinct', 'exists:users,id'],
+            'action' => ['required', 'in:promote,demote,delete'],
+        ]);
+
+        abort_if(
+            in_array($request->user()->id, $data['user_ids']),
+            422,
+            'You cannot change or delete your own account through bulk actions.'
+        );
+
+        $count = DB::transaction(function () use ($data): int {
+            $users = User::whereIn('id', $data['user_ids']);
+
+            if ($data['action'] === 'delete') {
+                return $users->delete();
+            }
+
+            return $users->update(['is_admin' => $data['action'] === 'promote']);
+        });
+
+        $message = match ($data['action']) {
+            'promote' => $count.' user(s) granted administrator access.',
+            'demote' => $count.' user(s) changed to member access.',
+            'delete' => $count.' user(s) deleted.',
+        };
+
+        return back()->with('status', $message);
+    }
+
     public function toggleService(Request $request, Service $service)
     {
         $data = $request->validate([
@@ -49,11 +96,19 @@ class AdminController extends Controller
 
         $hideFromMarketplace = $request->boolean('hide_from_marketplace');
 
-        $service->update([
-            'status' => $data['status'],
-            'inactive_reason' => $data['status'] === 'Inactive' ? ($data['inactive_reason'] ?? 'Moderated by administrator') : null,
-            'visible_in_dashboard' => ! $hideFromMarketplace,
-        ]);
+        DB::transaction(function () use ($service, $data, $hideFromMarketplace): void {
+            $wasActive = $service->status === 'Active';
+
+            $service->update([
+                'status' => $data['status'],
+                'inactive_reason' => $data['status'] === 'Inactive' ? ($data['inactive_reason'] ?? 'Moderated by administrator') : null,
+                'visible_in_dashboard' => ! $hideFromMarketplace,
+            ]);
+
+            if ($wasActive && $data['status'] === 'Inactive') {
+                $this->notifyServiceOwner($service, $data['inactive_reason'] ?? null);
+            }
+        });
 
         return back()->with('status', 'Service moderation updated.');
     }
@@ -71,13 +126,21 @@ class AdminController extends Controller
         $services = Service::whereIn('id', $data['service_ids'])->get();
         $hideFromMarketplace = $request->boolean('hide_from_marketplace');
 
-        foreach ($services as $service) {
-            $service->update([
-                'status' => $data['status'],
-                'inactive_reason' => $data['status'] === 'Inactive' ? ($data['inactive_reason'] ?? 'Moderated by administrator') : null,
-                'visible_in_dashboard' => ! $hideFromMarketplace,
-            ]);
-        }
+        DB::transaction(function () use ($services, $data, $hideFromMarketplace): void {
+            foreach ($services as $service) {
+                $wasActive = $service->status === 'Active';
+
+                $service->update([
+                    'status' => $data['status'],
+                    'inactive_reason' => $data['status'] === 'Inactive' ? ($data['inactive_reason'] ?? 'Moderated by administrator') : null,
+                    'visible_in_dashboard' => ! $hideFromMarketplace,
+                ]);
+
+                if ($wasActive && $data['status'] === 'Inactive') {
+                    $this->notifyServiceOwner($service, $data['inactive_reason'] ?? null);
+                }
+            }
+        });
 
         return back()->with('status', count($services).' service(s) updated.');
     }
@@ -101,5 +164,22 @@ class AdminController extends Controller
         ]));
 
         return back()->with('status', 'Announcement published.');
+    }
+
+    private function notifyServiceOwner(Service $service, ?string $reason): void
+    {
+        $message = 'Your service "'.$service->title.'" was deactivated by an administrator.';
+        $reason = trim((string) $reason);
+
+        if ($reason !== '') {
+            $message .= ' Reason: '.$reason;
+        }
+
+        Notification::create([
+            'user_id' => $service->user_id,
+            'message' => $message,
+            'link' => route('profile.edit', ['tab' => 'notifications']),
+            'is_read' => false,
+        ]);
     }
 }
