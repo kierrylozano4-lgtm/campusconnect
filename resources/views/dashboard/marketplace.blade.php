@@ -110,6 +110,9 @@
                     <a class="text-link" href="{{ route('chat.show', $item) }}">Chat</a>
                 </div>
             </div>
+            @if($item->status === 'Completed')
+                @include('dashboard._review-form', ['serviceRequest' => $item])
+            @endif
         @empty
             <p class="muted">No incoming requests.</p>
         @endforelse
@@ -128,6 +131,9 @@
                     <a class="text-link" href="{{ route('chat.show', $item) }}">Chat</a>
                 </div>
             </div>
+            @if($item->status === 'Completed')
+                @include('dashboard._review-form', ['serviceRequest' => $item])
+            @endif
         @empty
             <p class="muted">You have not requested a service.</p>
         @endforelse

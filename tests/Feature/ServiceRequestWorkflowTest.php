@@ -159,6 +159,115 @@ class ServiceRequestWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_both_participants_can_review_a_completed_request_once(): void
+    {
+        $requester = User::factory()->create();
+        $provider = User::factory()->create();
+        $service = Service::create([
+            'user_id' => $provider->id,
+            'title' => 'Calculus tutoring',
+            'category' => 'Academic',
+            'description' => 'Help with calculus.',
+            'status' => 'Active',
+            'visible_in_dashboard' => true,
+        ]);
+        $serviceRequest = ServiceRequest::create([
+            'service_id' => $service->id,
+            'requester_id' => $requester->id,
+            'provider_id' => $provider->id,
+            'status' => 'Completed',
+        ]);
+
+        $this->actingAs($requester)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Write a review')
+            ->assertSee(route('reviews.store', $serviceRequest), false);
+
+        $this->post(route('reviews.store', $serviceRequest), [
+            'rating' => 5,
+            'comment' => 'Excellent collaboration.',
+        ])->assertRedirect()
+            ->assertSessionHas('status', 'Review submitted successfully.');
+
+        $this->assertDatabaseHas('reviews', [
+            'service_request_id' => $serviceRequest->id,
+            'reviewer_id' => $requester->id,
+            'reviewed_user_id' => $provider->id,
+            'rating' => 5,
+            'comment' => 'Excellent collaboration.',
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Write a review')
+            ->assertSee('You reviewed this completed request.');
+
+        $this->from(route('dashboard'))
+            ->post(route('reviews.store', $serviceRequest), [
+                'rating' => 4,
+                'comment' => 'Duplicate review.',
+            ])
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors('review');
+
+        $this->assertDatabaseCount('reviews', 1);
+
+        $this->actingAs($provider)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Write a review')
+            ->assertSee(route('reviews.store', $serviceRequest), false);
+
+        $this->post(route('reviews.store', $serviceRequest), [
+            'rating' => 4,
+            'comment' => 'Clear communication.',
+        ])->assertRedirect()
+            ->assertSessionHas('status', 'Review submitted successfully.');
+
+        $this->assertDatabaseHas('reviews', [
+            'service_request_id' => $serviceRequest->id,
+            'reviewer_id' => $provider->id,
+            'reviewed_user_id' => $requester->id,
+            'rating' => 4,
+            'comment' => 'Clear communication.',
+        ]);
+
+        $this->assertDatabaseCount('reviews', 2);
+    }
+
+    public function test_only_completed_requests_can_be_reviewed(): void
+    {
+        $requester = User::factory()->create();
+        $provider = User::factory()->create();
+        $service = Service::create([
+            'user_id' => $provider->id,
+            'title' => 'Calculus tutoring',
+            'category' => 'Academic',
+            'description' => 'Help with calculus.',
+            'status' => 'Active',
+            'visible_in_dashboard' => true,
+        ]);
+        $serviceRequest = ServiceRequest::create([
+            'service_id' => $service->id,
+            'requester_id' => $requester->id,
+            'provider_id' => $provider->id,
+            'status' => 'Pending',
+        ]);
+
+        $this->actingAs($requester)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Write a review');
+
+        $this->post(route('reviews.store', $serviceRequest), [
+            'rating' => 5,
+            'comment' => 'Not completed.',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('reviews', 0);
+    }
+
     public function test_provider_can_post_a_priced_negotiable_service(): void
     {
         $provider = User::factory()->create();

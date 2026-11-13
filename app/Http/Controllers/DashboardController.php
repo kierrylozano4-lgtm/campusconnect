@@ -26,8 +26,15 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-        $incoming = ServiceRequest::with(['service', 'requester'])->where('provider_id', $user->id)->latest()->get();
-        $outgoing = ServiceRequest::with(['service', 'provider'])->where('requester_id', $user->id)->latest()->get();
+        $reviewsByUser = fn ($query) => $query->where('reviewer_id', $user->id);
+        $incoming = ServiceRequest::with(['service', 'requester', 'reviews' => $reviewsByUser])
+            ->where('provider_id', $user->id)
+            ->latest()
+            ->get();
+        $outgoing = ServiceRequest::with(['service', 'provider', 'reviews' => $reviewsByUser])
+            ->where('requester_id', $user->id)
+            ->latest()
+            ->get();
 
         return view('dashboard.marketplace', [
             'services' => $services,

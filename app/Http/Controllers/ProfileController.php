@@ -54,11 +54,16 @@ class ProfileController extends Controller
             ? $serviceRequest->provider_id
             : $serviceRequest->requester_id;
 
-        Review::create(array_merge($data, [
+        $review = Review::query()->firstOrCreate([
             'service_request_id' => $serviceRequest->id,
             'reviewer_id' => $request->user()->id,
+        ], array_merge($data, [
             'reviewed_user_id' => $reviewedUserId,
         ]));
+
+        if (! $review->wasRecentlyCreated) {
+            return back()->withErrors(['review' => 'You have already reviewed this completed request.']);
+        }
 
         return back()->with('status', 'Review submitted successfully.');
     }

@@ -40,7 +40,8 @@ class AdminController extends Controller
     public function toggleRole(Request $request, User $user)
     {
         abort_if($user->is($request->user()), 422, 'You cannot change your own admin role.');
-        $user->update(['is_admin' => ! $user->is_admin]);
+        $user->is_admin = ! $user->is_admin;
+        $user->save();
 
         return back()->with('status', 'User role updated.');
     }

@@ -72,6 +72,31 @@ class AdminServiceModerationTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $deletedUser->id]);
     }
 
+    public function test_admin_can_toggle_another_users_role_individually(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.users.role', $user))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'User role updated.');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'is_admin' => true,
+        ]);
+
+        $this->patch(route('admin.users.role', $user))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'User role updated.');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'is_admin' => false,
+        ]);
+    }
+
     public function test_bulk_user_actions_cannot_change_or_delete_the_current_admin(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
