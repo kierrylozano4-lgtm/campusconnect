@@ -33,7 +33,7 @@ class ServiceRequestWorkflowTest extends TestCase
             ->assertSee('Campus services feed')
             ->assertSee('Calculus tutoring')
             ->assertSee('id="service-post"', false)
-            ->assertSee(route('dashboard').'#incoming-requests', false);
+            ->assertSee(route('conversations.index'), false);
     }
 
     public function test_workspace_sidebar_displays_recent_campus_broadcasts(): void
@@ -84,7 +84,7 @@ class ServiceRequestWorkflowTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'user_id' => $requester->id,
             'message' => 'The request for '.$service->title.' is now Accepted.',
-            'link' => route('chat.show', $serviceRequest),
+            'link' => route('conversations.show', $serviceRequest->ensureConversation()),
             'is_read' => false,
         ]);
     }
@@ -154,7 +154,7 @@ class ServiceRequestWorkflowTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'user_id' => $provider->id,
             'message' => 'The request for '.$service->title.' is now Cancelled.',
-            'link' => route('chat.show', $serviceRequest),
+            'link' => route('conversations.show', $serviceRequest->ensureConversation()),
             'is_read' => false,
         ]);
     }
@@ -369,10 +369,18 @@ class ServiceRequestWorkflowTest extends TestCase
             ->where('requester_id', $requester->id)
             ->firstOrFail();
 
-        $response->assertRedirect(route('chat.show', $serviceRequest));
+        $conversation = $serviceRequest->fresh()->conversation;
+        $response->assertRedirect(route('conversations.show', $conversation));
+        $this->assertDatabaseHas('conversation_messages', [
+            'conversation_id' => $conversation->id,
+            'service_request_id' => $serviceRequest->id,
+            'type' => 'service_request',
+            'message' => 'Service request sent for '.$service->title.'.',
+        ]);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $provider->id,
             'message' => 'You have a new service request for '.$service->title.'.',
+            'link' => route('conversations.show', $conversation),
         ]);
     }
 
@@ -397,7 +405,7 @@ class ServiceRequestWorkflowTest extends TestCase
 
         $this->actingAs($requester)
             ->post(route('services.request', $service), ['start_chat' => '1'])
-            ->assertRedirect(route('chat.show', $serviceRequest));
+            ->assertRedirect(route('conversations.show', $serviceRequest->ensureConversation()));
 
         $this->assertSame(1, ServiceRequest::where('service_id', $service->id)->count());
     }

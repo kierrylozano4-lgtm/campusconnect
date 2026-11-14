@@ -47,6 +47,15 @@
                 </span>
                 <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
             </a>
+            <a class="panel admin-quick-link" href="{{ route('admin.weather.index') }}">
+                <span class="admin-quick-link-icon" aria-hidden="true">03</span>
+                <span class="admin-quick-link-copy">
+                    <span class="eyebrow">Live conditions</span>
+                    <strong>Weather report</strong>
+                    <span>Check current weather for a campus or city.</span>
+                </span>
+                <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
+            </a>
         </section>
 
         <section class="panel admin-section admin-announcement-section" aria-labelledby="admin-announcement-heading">

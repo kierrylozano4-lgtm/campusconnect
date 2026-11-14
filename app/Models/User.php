@@ -7,19 +7,31 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['full_name', 'student_id', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'google_id'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public function profile()
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function conversationsAsFirst(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'user_one_id');
+    }
+
+    public function conversationsAsSecond(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'user_two_id');
     }
 
     public function services()

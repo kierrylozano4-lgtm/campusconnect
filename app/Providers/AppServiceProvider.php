@@ -30,14 +30,14 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('sidebarAnnouncements', DB::table('announcements')->latest()->limit(3)->get())
+                ->with('unreadConversationCount', DB::table('conversation_messages')
+                    ->where('receiver_id', Auth::id())
+                    ->whereNull('read_at')
+                    ->count())
                 ->with('sidebarStats', [
                     'users' => User::count(),
                     'active_services' => Service::where('status', 'Active')->count(),
                     'inactive_services' => Service::where('status', 'Inactive')->count(),
-                    'requests' => DB::table('service_requests')
-                        ->where('provider_id', Auth::id())
-                        ->where('status', 'Pending')
-                        ->count(),
                 ])
                 ->with('unreadNotificationCount', Auth::user()->notifications()->where('is_read', false)->count());
         });

@@ -2,44 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Message;
-use App\Models\Notification;
 use App\Models\ServiceRequest;
+use App\Services\ConversationMessenger;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
-    public function show(Request $request, ServiceRequest $serviceRequest)
+    public function __construct(private ConversationMessenger $messenger) {}
+
+    public function show(Request $request, ServiceRequest $serviceRequest): RedirectResponse
     {
         $this->authorizeParticipant($request, $serviceRequest);
-        $serviceRequest->load(['service', 'requester', 'provider']);
-        $messages = $serviceRequest->messages()->oldest()->get();
-        $otherUser = $serviceRequest->requester_id === $request->user()->id ? $serviceRequest->provider : $serviceRequest->requester;
 
-        return view('chat.show', compact('serviceRequest', 'messages', 'otherUser'));
+        return redirect()->route('conversations.show', $serviceRequest->ensureConversation());
     }
 
-    public function store(Request $request, ServiceRequest $serviceRequest)
+    public function store(Request $request, ServiceRequest $serviceRequest): RedirectResponse
     {
         $this->authorizeParticipant($request, $serviceRequest);
         $data = $request->validate(['message' => ['required', 'string', 'max:5000']]);
-        $receiverId = $serviceRequest->requester_id === $request->user()->id ? $serviceRequest->provider_id : $serviceRequest->requester_id;
 
-        Message::create([
-            'service_request_id' => $serviceRequest->id,
-            'sender_id' => $request->user()->id,
-            'receiver_id' => $receiverId,
-            'message' => $data['message'],
-        ]);
+        $conversation = $serviceRequest->ensureConversation();
+        $this->messenger->sendMessage($conversation, $request->user(), $data['message'], $serviceRequest);
 
-        Notification::create([
-            'user_id' => $receiverId,
-            'message' => 'New message from '.$request->user()->full_name.' about '.$serviceRequest->service->title.'.',
-            'link' => route('chat.show', $serviceRequest),
-            'is_read' => false,
-        ]);
-
-        return back();
+        return redirect()->route('conversations.show', $conversation);
     }
 
     private function authorizeParticipant(Request $request, ServiceRequest $serviceRequest): void

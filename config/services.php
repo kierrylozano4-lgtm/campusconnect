@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000').'/auth/google/callback'),
+    ],
+
+    'weather' => [
+        'api_key' => env('OPENWEATHER_API_KEY'),
+        'city' => env('OPENWEATHER_CITY', 'Manila'),
+        'geocoding_endpoint' => 'https://api.openweathermap.org/geo/1.0/direct',
+        'current_endpoint' => 'https://api.openweathermap.org/data/2.5/weather',
+        'verify_ssl' => true,
+        'connect_timeout' => 10,
+        'timeout' => 15,
+    ],
+
 ];

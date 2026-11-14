@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Notification;
 use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Services\ConversationMessenger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
+    public function __construct(private ConversationMessenger $messenger) {}
+
     public function index(Request $request)
     {
         $search = trim((string) $request->query('search'));
@@ -91,33 +93,36 @@ class DashboardController extends Controller
 
         if ($existingRequest) {
             if ($request->boolean('start_chat')) {
-                return redirect()->route('chat.show', $existingRequest);
+                return redirect()->route('conversations.show', $existingRequest->ensureConversation());
             }
 
             return back()->withErrors(['service' => 'You already requested this service.']);
         }
 
-        $serviceRequest = ServiceRequest::create([
-            'service_id' => $service->id,
-            'requester_id' => $request->user()->id,
-            'provider_id' => $service->user_id,
-        ]);
+        $serviceRequest = DB::transaction(function () use ($request, $service): ServiceRequest {
+            $serviceRequest = ServiceRequest::create([
+                'service_id' => $service->id,
+                'requester_id' => $request->user()->id,
+                'provider_id' => $service->user_id,
+            ]);
 
-        DB::table('service_applications')->updateOrInsert(
-            ['service_id' => $service->id, 'user_id' => $request->user()->id],
-            ['created_at' => now(), 'updated_at' => now()]
-        );
-        DB::table('notifications')->insert([
-            'user_id' => $service->user_id,
-            'message' => 'You have a new service request for '.$service->title.'.',
-            'link' => route('chat.show', $serviceRequest),
-            'is_read' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            DB::table('service_applications')->updateOrInsert(
+                ['service_id' => $service->id, 'user_id' => $request->user()->id],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+            $this->messenger->recordEvent(
+                $serviceRequest,
+                $request->user(),
+                'Service request sent for '.$service->title.'.',
+                'service_request',
+                'You have a new service request for '.$service->title.'.'
+            );
+
+            return $serviceRequest;
+        });
 
         if ($request->boolean('start_chat')) {
-            return redirect()->route('chat.show', $serviceRequest)->with('status', 'Your chat is ready. A service request was sent to the provider.');
+            return redirect()->route('conversations.show', $serviceRequest->ensureConversation())->with('status', 'Your chat is ready. A service request was sent to the provider.');
         }
 
         return back()->with('status', 'Your service request was sent.');
@@ -147,12 +152,13 @@ class DashboardController extends Controller
 
             $lockedRequest->update(['status' => $data['status']]);
 
-            Notification::create([
-                'user_id' => $isProvider ? $lockedRequest->requester_id : $lockedRequest->provider_id,
-                'message' => 'The request for '.$lockedRequest->service->title.' is now '.$data['status'].'.',
-                'link' => route('chat.show', $lockedRequest),
-                'is_read' => false,
-            ]);
+            $this->messenger->recordEvent(
+                $lockedRequest,
+                $request->user(),
+                'Request for '.$lockedRequest->service->title.' is now '.$data['status'].'.',
+                'request_status',
+                'The request for '.$lockedRequest->service->title.' is now '.$data['status'].'.'
+            );
 
             return true;
         });

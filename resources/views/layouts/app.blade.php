@@ -6,7 +6,7 @@
     <title>{{ $title ?? 'CampusConnect' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="{{ auth()->check() ? 'workspace-page '.(request()->routeIs('dashboard') ? 'dashboard-page' : 'app-page') : (request()->routeIs('login') ? 'login-page' : 'app-page') }}">
+<body class="{{ auth()->check() ? 'workspace-page '.(request()->routeIs('dashboard') ? 'dashboard-page' : 'app-page') : (request()->routeIs('login') ? 'login-page' : 'app-page '.(request()->routeIs('register') ? 'register-page' : (request()->routeIs('home') ? 'home-page' : ''))) }}">
     @auth
         <div class="workspace-shell">
             <aside class="workspace-sidebar" aria-label="CampusConnect workspace">
@@ -36,9 +36,9 @@
                     <a class="{{ request()->routeIs('dashboard') ? 'is-active' : '' }}" href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>
                         <span aria-hidden="true">▦</span><span>Marketplace</span>
                     </a>
-                    <a href="{{ route('dashboard') }}#incoming-requests">
+                    <a class="{{ request()->routeIs('conversations.*', 'chat.*') ? 'is-active' : '' }}" href="{{ route('conversations.index') }}" @if(request()->routeIs('conversations.*', 'chat.*')) aria-current="page" @endif>
                         <span aria-hidden="true">◌</span><span>Requests &amp; chat</span>
-                        @if($sidebarStats['requests'] > 0)<small>{{ $sidebarStats['requests'] }}</small>@endif
+                        @if($unreadConversationCount > 0)<small>{{ $unreadConversationCount }}</small>@endif
                     </a>
                     <a class="{{ request()->routeIs('leaderboard') ? 'is-active' : '' }}" href="{{ route('leaderboard') }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
                         <span aria-hidden="true">♛</span><span>Leaderboard</span>
