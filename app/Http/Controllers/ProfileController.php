@@ -38,7 +38,7 @@ class ProfileController extends Controller
 
         $request->user()->profile()->updateOrCreate(['user_id' => $request->user()->id], $data);
 
-        return redirect()->route('dashboard')->with('status', 'Profile setup saved successfully.');
+        return redirect()->route('profile.edit', ['tab' => 'settings'])->with('status', 'Campus profile details saved successfully.');
     }
 
     public function storeReview(Request $request, ServiceRequest $serviceRequest)
@@ -79,13 +79,29 @@ class ProfileController extends Controller
 
     private function profileView(Request $request, User $profileUser)
     {
-        $profileUser->load(['profile', 'services', 'reviewsReceived.reviewer', 'notifications']);
-        $tab = in_array($request->query('tab'), ['profile', 'services', 'reviews', 'notifications'], true)
-            ? $request->query('tab')
-            : 'profile';
+        $profileUser->load(['profile', 'services', 'reviewsReceived.reviewer']);
         $isOwnProfile = $request->user()->is($profileUser);
+        $requestedTab = $request->query('tab');
+        $allowedTabs = ['profile', 'services', 'reviews'];
 
-        return view('profile.show', compact('profileUser', 'tab', 'isOwnProfile'));
+        if ($isOwnProfile) {
+            $profileUser->load('notifications');
+            $allowedTabs = [...$allowedTabs, 'settings', 'edit', 'notifications'];
+        }
+
+        $tab = in_array($requestedTab, $allowedTabs, true) ? $requestedTab : 'profile';
+        $profile = $profileUser->profile;
+        $completionFields = [
+            filled($profile?->campus_address),
+            filled($profile?->grade_level),
+            filled($profile?->course_major),
+            filled($profile?->bio),
+            filled($profile?->facebook) || filled($profile?->instagram) || filled($profile?->tiktok) || filled($profile?->github),
+        ];
+        $profileCompletion = (int) round(collect($completionFields)->filter()->count() / count($completionFields) * 100);
+        $averageRating = $profileUser->reviewsReceived->avg('rating');
+
+        return view('profile.show', compact('profileUser', 'tab', 'isOwnProfile', 'profileCompletion', 'averageRating'));
     }
 
     public function update(Request $request)

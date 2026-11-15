@@ -7,13 +7,19 @@
             <h1 id="marketplace-heading">Campus services feed</h1>
             <p class="muted">Find a skill, share yours, and make campus life better together.</p>
         </div>
-        <span class="marketplace-result-count">Showing {{ $services->count() }} service{{ $services->count() === 1 ? '' : 's' }}</span>
+        <div class="marketplace-feed-tools">
+            <span class="marketplace-result-count" data-service-result-count aria-live="polite" aria-atomic="true">Showing {{ $services->count() }} service{{ $services->count() === 1 ? '' : 's' }}</span>
+            <div class="marketplace-layout-switch" role="group" aria-label="Service layout">
+                <button class="marketplace-layout-button" type="button" data-service-layout="cards" aria-pressed="true">Cards</button>
+                <button class="marketplace-layout-button" type="button" data-service-layout="list" aria-pressed="false">List</button>
+            </div>
+        </div>
     </header>
 
-    <form class="searchbar" method="GET" action="{{ route('dashboard') }}">
+    <form class="searchbar" method="GET" action="{{ route('dashboard') }}" data-service-search-form>
         <span class="search-icon" aria-hidden="true">⌕</span>
-        <input name="search" value="{{ $search }}" placeholder="Search services, skills, or people" aria-label="Search campus services">
-        <select name="category" aria-label="Filter by category">
+        <input name="search" value="{{ $search }}" placeholder="Search services, skills, or people" aria-label="Search campus services" autocomplete="off" data-service-search-input>
+        <select name="category" aria-label="Filter by category" data-service-category-filter>
             <option value="">All categories</option>
             @foreach($categories as $item)
                 <option value="{{ $item }}" @selected($category === $item)>{{ $item }}</option>
@@ -22,9 +28,9 @@
         <button class="button button-small" type="submit">Filter</button>
     </form>
 
-    <div class="service-grid">
+    <div class="service-grid" data-service-grid data-service-layout="cards">
         @forelse($services as $service)
-            <article class="service-card">
+            <article class="service-card" data-service-card data-service-title="{{ \Illuminate\Support\Str::lower($service->title) }}" data-service-category="{{ $service->category }}">
                 <a class="service-card-main" href="{{ route('services.show', $service) }}" aria-label="View details for {{ $service->title }}">
                     <div class="service-card-top">
                         <span class="tag">{{ $service->category }}</span>
@@ -65,6 +71,13 @@
                 <p>Try another search or category, or check back later for new listings.</p>
             </div>
         @endforelse
+        @if($services->isNotEmpty())
+            <div class="marketplace-empty" data-service-search-empty hidden>
+                <span aria-hidden="true">⌕</span>
+                <strong>No services found</strong>
+                <p>Try another search or category, or check back later for new listings.</p>
+            </div>
+        @endif
     </div>
 </section>
 

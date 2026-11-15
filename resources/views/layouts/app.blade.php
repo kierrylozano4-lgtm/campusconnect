@@ -43,11 +43,11 @@
                     <a class="{{ request()->routeIs('leaderboard') ? 'is-active' : '' }}" href="{{ route('leaderboard') }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
                         <span aria-hidden="true">♛</span><span>Leaderboard</span>
                     </a>
-                    <a class="{{ request()->routeIs('profile.show') || (request()->routeIs('profile.edit') && request()->query('tab') !== 'notifications') ? 'is-active' : '' }}" href="{{ route('profile.edit') }}" @if(request()->routeIs('profile.show') || (request()->routeIs('profile.edit') && request()->query('tab') !== 'notifications')) aria-current="page" @endif>
+                    <a class="{{ request()->routeIs('profile.show') || (request()->routeIs('profile.edit') && ! in_array(request()->query('tab'), ['settings', 'edit', 'notifications'], true)) ? 'is-active' : '' }}" href="{{ route('profile.edit') }}" @if(request()->routeIs('profile.show') || (request()->routeIs('profile.edit') && ! in_array(request()->query('tab'), ['settings', 'edit', 'notifications'], true))) aria-current="page" @endif>
                         <span aria-hidden="true">◉</span><span>My profile</span>
                     </a>
-                    <a class="{{ request()->routeIs('profile.edit') && request()->query('tab') === 'notifications' ? 'is-active' : '' }}" href="{{ route('profile.edit', ['tab' => 'notifications']) }}" @if(request()->routeIs('profile.edit') && request()->query('tab') === 'notifications') aria-current="page" @endif>
-                        <span aria-hidden="true">◈</span><span>Notifications</span>
+                    <a class="{{ (request()->routeIs('profile.edit') && in_array(request()->query('tab'), ['settings', 'edit', 'notifications'], true)) || request()->routeIs('account.setup*') ? 'is-active' : '' }}" href="{{ route('profile.edit', ['tab' => 'settings']) }}" @if((request()->routeIs('profile.edit') && in_array(request()->query('tab'), ['settings', 'edit', 'notifications'], true)) || request()->routeIs('account.setup*')) aria-current="page" @endif>
+                        <span aria-hidden="true">⚙</span><span>Settings</span>
                         @if($unreadNotificationCount > 0)<small>{{ $unreadNotificationCount }}</small>@endif
                     </a>
                     @if(auth()->user()->is_admin)
@@ -55,9 +55,6 @@
                             <span aria-hidden="true">ϟ</span><span>Admin control</span><small>Admin</small>
                         </a>
                     @endif
-                    <a class="{{ request()->routeIs('account.setup*') ? 'is-active' : '' }}" href="{{ route('account.setup') }}" @if(request()->routeIs('account.setup*')) aria-current="page" @endif>
-                        <span aria-hidden="true">⚙</span><span>Account setup</span>
-                    </a>
                 </nav>
 
                 <section class="workspace-quick-stats" aria-labelledby="workspace-stats-heading">

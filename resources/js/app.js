@@ -43,3 +43,54 @@ const conversationMessages = document.querySelector('.conversation-messages');
 if (conversationMessages) {
     conversationMessages.scrollTop = conversationMessages.scrollHeight;
 }
+
+const serviceSearchForm = document.querySelector('[data-service-search-form]');
+
+if (serviceSearchForm) {
+    const searchInput = serviceSearchForm.querySelector('[data-service-search-input]');
+    const categoryFilter = serviceSearchForm.querySelector('[data-service-category-filter]');
+    const serviceCards = [...document.querySelectorAll('[data-service-card]')];
+    const serviceGrid = document.querySelector('[data-service-grid]');
+    const resultCount = document.querySelector('[data-service-result-count]');
+    const emptyState = document.querySelector('[data-service-search-empty]');
+    const layoutButtons = [...document.querySelectorAll('[data-service-layout]')];
+
+    const updateServiceResults = () => {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const selectedCategory = categoryFilter.value;
+        let visibleCount = 0;
+
+        serviceCards.forEach((card) => {
+            const matchesTitle = card.dataset.serviceTitle.startsWith(searchTerm);
+            const matchesCategory = !selectedCategory || card.dataset.serviceCategory === selectedCategory;
+            card.hidden = !matchesTitle || !matchesCategory;
+
+            if (!card.hidden) {
+                visibleCount += 1;
+            }
+        });
+
+        if (resultCount) {
+            resultCount.textContent = `Showing ${visibleCount} service${visibleCount === 1 ? '' : 's'}`;
+        }
+
+        if (emptyState) {
+            emptyState.hidden = visibleCount > 0;
+        }
+    };
+
+    const setServiceLayout = (layout) => {
+        serviceGrid.dataset.serviceLayout = layout;
+        layoutButtons.forEach((button) => {
+            button.setAttribute('aria-pressed', String(button.dataset.serviceLayout === layout));
+        });
+    };
+
+    searchInput.addEventListener('input', updateServiceResults);
+    categoryFilter.addEventListener('change', updateServiceResults);
+    layoutButtons.forEach((button) => {
+        button.addEventListener('click', () => setServiceLayout(button.dataset.serviceLayout));
+    });
+
+    updateServiceResults();
+}

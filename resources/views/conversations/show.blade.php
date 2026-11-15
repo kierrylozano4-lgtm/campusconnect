@@ -41,7 +41,7 @@
 
     <form class="conversation-composer" method="POST" action="{{ route('conversations.messages.store', $conversation) }}">
         @csrf
-        <label class="sr-only" for="conversation-message">Your message</label>
+        <label class="sr-only" for="conversation-message">Message now</label>
         <textarea id="conversation-message" name="message" rows="2" placeholder="Write a message..." required maxlength="5000">{{ old('message') }}</textarea>
         <button class="button" type="submit">Send</button>
     </form>
