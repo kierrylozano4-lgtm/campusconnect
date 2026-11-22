@@ -7,6 +7,10 @@ use App\Models\Review;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use RuntimeException;
+use Throwable;
 
 class ProfileController extends Controller
 {
@@ -39,6 +43,35 @@ class ProfileController extends Controller
         $request->user()->profile()->updateOrCreate(['user_id' => $request->user()->id], $data);
 
         return redirect()->route('profile.edit', ['tab' => 'settings'])->with('status', 'Campus profile details saved successfully.');
+    }
+
+    public function savePreferences(Request $request)
+    {
+        $data = $request->validate([
+            'design_theme' => ['required', Rule::in(['modern', 'glass', 'skeuomorphic', 'brutalist', 'editorial'])],
+            'design_palette' => ['required', Rule::in(['campus', 'ocean', 'botanical', 'sunset', 'monochrome'])],
+        ]);
+
+        $request->user()->update($data);
+
+        return back()->with('status', 'Your design preferences have been saved.');
+    }
+
+    public function storeFeedback(Request $request)
+    {
+        $data = $request->validate([
+            'recipient' => ['required', Rule::in(['admin', 'developer'])],
+            'subject' => ['required', 'string', 'max:150'],
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $request->user()->feedbackMessages()->create([
+            ...$data,
+            'sender_name' => $request->user()->full_name,
+            'sender_email' => $request->user()->email,
+        ]);
+
+        return redirect()->route('profile.edit', ['tab' => 'settings'])->with('status', 'Your feedback was sent to the '.($data['recipient'] === 'admin' ? 'admin team' : 'development team').'.');
     }
 
     public function storeReview(Request $request, ServiceRequest $serviceRequest)
@@ -85,7 +118,7 @@ class ProfileController extends Controller
         $allowedTabs = ['profile', 'services', 'reviews'];
 
         if ($isOwnProfile) {
-            $profileUser->load('notifications');
+            $profileUser->load(['notifications', 'feedbackMessages' => fn ($query) => $query->latest()]);
             $allowedTabs = [...$allowedTabs, 'settings', 'edit', 'notifications'];
         }
 
@@ -115,9 +148,50 @@ class ProfileController extends Controller
             'tiktok' => ['nullable', 'string', 'max:100'],
             'github' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:2000'],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'cover_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_profile_photo' => ['sometimes', 'boolean'],
+            'remove_cover_photo' => ['sometimes', 'boolean'],
         ]);
 
-        $request->user()->profile()->updateOrCreate(['user_id' => $request->user()->id], $data);
+        $profile = $request->user()->profile()->firstOrNew();
+        $previousPaths = [];
+        $storedPaths = [];
+
+        foreach (['profile_photo' => 'profile_photo_path', 'cover_photo' => 'cover_photo_path'] as $input => $column) {
+            if ($request->hasFile($input)) {
+                $path = $request->file($input)->storePublicly('profiles/'.$request->user()->id, 'public');
+
+                if (! is_string($path)) {
+                    throw new RuntimeException('The uploaded image could not be stored.');
+                }
+
+                $storedPaths[] = $path;
+                $data[$column] = $path;
+                if ($profile->{$column}) {
+                    $previousPaths[] = $profile->{$column};
+                }
+            } elseif ($request->boolean('remove_'.$input)) {
+                if ($profile->{$column}) {
+                    $previousPaths[] = $profile->{$column};
+                }
+
+                $data[$column] = null;
+            }
+        }
+
+        unset($data['profile_photo'], $data['cover_photo'], $data['remove_profile_photo'], $data['remove_cover_photo']);
+
+        try {
+            $profile->fill($data);
+            $profile->user_id = $request->user()->id;
+            $profile->save();
+        } catch (Throwable $exception) {
+            Storage::disk('public')->delete($storedPaths);
+            throw $exception;
+        }
+
+        Storage::disk('public')->delete($previousPaths);
 
         return back()->with('status', 'Profile updated successfully.');
     }

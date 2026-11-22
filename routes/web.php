@@ -29,6 +29,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/preferences', [ProfileController::class, 'savePreferences'])->name('profile.preferences');
+    Route::post('/profile/feedback', [ProfileController::class, 'storeFeedback'])->middleware('throttle:5,1')->name('profile.feedback.store');
     Route::post('/notifications/{notification}/read', [ProfileController::class, 'markNotificationAsRead'])->name('notifications.read');
     Route::get('/account/setup', [ProfileController::class, 'setup'])->name('account.setup');
     Route::put('/account/setup', [ProfileController::class, 'saveSetup'])->name('account.setup.save');
@@ -46,6 +48,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'index'])->name('index');
     Route::get('/users', [AdminController::class, 'users'])->name('users.index');
     Route::get('/services', [AdminController::class, 'services'])->name('services.index');
+    Route::get('/feedback', [AdminController::class, 'feedback'])->name('feedback.index');
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
     Route::get('/weather/data', [WeatherController::class, 'show'])->name('weather.data');
     Route::patch('/users/bulk', [AdminController::class, 'bulkUpdateUsers'])->name('users.bulk');
@@ -54,5 +57,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/services/bulk', [AdminController::class, 'bulkToggleServices'])->name('services.bulk');
     Route::patch('/services/{service}', [AdminController::class, 'toggleService'])->name('services.toggle');
     Route::delete('/services/{service}', [AdminController::class, 'destroyService'])->name('services.destroy');
+    Route::patch('/feedback/{userFeedback}', [AdminController::class, 'updateFeedbackStatus'])->name('feedback.update');
     Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])->name('announcements.store');
 });

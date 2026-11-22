@@ -8,6 +8,9 @@
     <a href="{{ route('admin.services.index') }}" @if($active === 'services') class="is-active" aria-current="page" @endif>
         <span aria-hidden="true">▣</span> Manage services
     </a>
+    <a href="{{ route('admin.feedback.index') }}" @if($active === 'feedback') class="is-active" aria-current="page" @endif>
+        <span aria-hidden="true">✉</span> User feedback
+    </a>
     <a href="{{ route('admin.weather.index') }}" @if($active === 'weather') class="is-active" aria-current="page" @endif>
         <span aria-hidden="true">☼</span> Weather report
     </a>

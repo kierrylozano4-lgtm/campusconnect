@@ -1,5 +1,17 @@
 @extends('layouts.app')
 @section('content')
+<div class="profile-cover-wrap">
+	@if($profileUser->profile?->cover_photo_path)
+		<button class="profile-cover profile-photo-preview" type="button" data-profile-photo-preview data-photo-url="{{ asset('storage/'.$profileUser->profile->cover_photo_path) }}" data-photo-alt="{{ $profileUser->full_name }}'s cover photo" aria-label="Preview {{ $profileUser->full_name }}'s cover photo">
+			<img src="{{ asset('storage/'.$profileUser->profile->cover_photo_path) }}" alt="">
+		</button>
+	@else
+		<div class="profile-cover" aria-label="{{ $profileUser->full_name }} has no cover photo"><span aria-hidden="true">CampusConnect</span></div>
+	@endif
+	@if($isOwnProfile)
+		<a class="profile-cover-update" href="{{ route('profile.edit', ['tab' => 'edit']) }}#profile-photo-settings">Update cover photo</a>
+	@endif
+</div>
 <section class="section-heading profile-heading">
 	<div>
 		<p class="eyebrow">{{ $isOwnProfile ? 'Your profile' : 'Campus member' }}</p>
@@ -7,12 +19,25 @@
 		<p class="muted">{{ $profileUser->email }} · Student ID {{ $profileUser->student_id }}</p>
 	</div>
 	<div class="profile-heading-actions">
-		<div class="avatar" aria-hidden="true">{{ $profileUser->initials() }}</div>
+		<div class="profile-avatar-wrap">
+			@if($profileUser->profile?->profile_photo_path)
+				<button class="avatar profile-avatar profile-photo-preview" type="button" data-profile-photo-preview data-photo-url="{{ asset('storage/'.$profileUser->profile->profile_photo_path) }}" data-photo-alt="{{ $profileUser->full_name }}'s profile picture" aria-label="Preview {{ $profileUser->full_name }}'s profile picture"><img src="{{ asset('storage/'.$profileUser->profile->profile_photo_path) }}" alt=""></button>
+			@else
+				<div class="avatar profile-avatar"><span aria-hidden="true">{{ $profileUser->initials() }}</span></div>
+			@endif
+			@if($isOwnProfile)
+				<a class="profile-avatar-update" href="{{ route('profile.edit', ['tab' => 'edit']) }}#profile-photo-settings">Update profile picture</a>
+			@endif
+		</div>
 		@if($isOwnProfile)
 			<a class="button button-small" href="{{ route('profile.edit', ['tab' => 'settings']) }}"><span aria-hidden="true">⚙</span> Settings</a>
 		@endif
 	</div>
 </section>
+<dialog class="profile-photo-dialog" data-profile-photo-dialog aria-label="Photo preview">
+	<form method="dialog"><button class="profile-photo-dialog-close" type="submit" aria-label="Close photo preview">Close <span aria-hidden="true">×</span></button></form>
+	<img data-profile-photo-dialog-image src="" alt="">
+</dialog>
 @unless($isOwnProfile)<section class="profile-chat-action panel"><div><h2>Start a conversation</h2><p class="muted">Send {{ $profileUser->full_name }} a direct message.</p></div><form method="POST" action="{{ route('conversations.start', $profileUser) }}">@csrf<button class="button" type="submit">Chat with {{ $profileUser->full_name }}</button></form></section>@endunless
 <nav class="tabs" aria-label="Profile navigation">
 	<a class="{{ $tab === 'profile' ? 'active' : '' }}" href="{{ $isOwnProfile ? route('profile.edit', ['tab' => 'profile']) : route('profile.show', ['user' => $profileUser, 'tab' => 'profile']) }}">Profile</a>
@@ -99,11 +124,62 @@
 				<form method="POST" action="{{ route('logout') }}" class="settings-logout-form">@csrf<button class="settings-action settings-logout" type="submit"><span><strong>Sign out</strong><small>End your CampusConnect session on this device.</small></span><span aria-hidden="true">↗</span></button></form>
 			</section>
 		</div>
+		<section class="panel settings-panel settings-appearance-panel" aria-labelledby="appearance-settings-heading">
+			<div class="settings-panel-heading"><span class="settings-index">03</span><div><h3 id="appearance-settings-heading">Website appearance</h3><p class="muted">Choose a visual style and color family for your campus workspace.</p></div></div>
+			<form method="POST" action="{{ route('profile.preferences') }}" class="settings-appearance-form" data-appearance-form>
+				@csrf
+				@method('PUT')
+				<label>Design style
+					<select name="design_theme" data-theme-select>
+						<option value="modern" @selected($profileUser->design_theme === 'modern')>Modern</option>
+						<option value="glass" @selected($profileUser->design_theme === 'glass')>Glassmorphism</option>
+						<option value="skeuomorphic" @selected($profileUser->design_theme === 'skeuomorphic')>Skeuomorphic</option>
+						<option value="brutalist" @selected($profileUser->design_theme === 'brutalist')>Brutalist</option>
+						<option value="editorial" @selected($profileUser->design_theme === 'editorial')>Editorial</option>
+					</select>
+				</label>
+				<fieldset class="palette-fieldset">
+					<legend>Color combination</legend>
+					<div class="palette-options">
+						@foreach(['campus' => 'Campus', 'ocean' => 'Ocean', 'botanical' => 'Botanical', 'sunset' => 'Sunset', 'monochrome' => 'Monochrome'] as $palette => $label)
+							<label class="palette-choice"><input type="radio" name="design_palette" value="{{ $palette }}" @checked($profileUser->design_palette === $palette)><span class="palette-swatch palette-swatch-{{ $palette }}" aria-hidden="true"></span><span>{{ $label }}</span></label>
+						@endforeach
+					</div>
+				</fieldset>
+				<button class="button button-small" type="submit">Apply design</button>
+			</form>
+		</section>
+		<section class="settings-support-grid">
+			<section class="panel settings-panel" aria-labelledby="send-feedback-heading">
+				<div class="settings-panel-heading"><span class="settings-index">04</span><div><h3 id="send-feedback-heading">Send feedback</h3><p class="muted">Share a concern, report a problem, or suggest an improvement.</p></div></div>
+				<form method="POST" action="{{ route('profile.feedback.store') }}" class="settings-feedback-form">@csrf
+					<label>Send to<select name="recipient" required><option value="admin">Campus admin team</option><option value="developer">Development team</option></select></label>
+					<label>Subject<input name="subject" maxlength="150" required placeholder="What is this about?"></label>
+					<label>Message<textarea name="message" rows="5" maxlength="5000" required placeholder="Tell us what happened or what could work better."></textarea></label>
+					<button class="button button-small" type="submit">Send feedback</button>
+				</form>
+			</section>
+			<section class="panel settings-panel" aria-labelledby="feedback-history-heading">
+				<div class="settings-panel-heading"><span class="settings-index">05</span><div><h3 id="feedback-history-heading">Your feedback</h3><p class="muted">Messages you have sent to the campus team.</p></div></div>
+				@forelse($profileUser->feedbackMessages->take(5) as $feedback)
+					<article class="settings-feedback-history-item"><div><strong>{{ $feedback->subject }}</strong><span>{{ $feedback->recipient === 'developer' ? 'Development team' : 'Admin team' }} · {{ $feedback->created_at->format('M j, Y') }}</span></div><span class="feedback-status feedback-status-{{ \Illuminate\Support\Str::slug($feedback->status) }}">{{ $feedback->status }}</span></article>
+				@empty
+					<p class="empty muted">You have not sent any feedback yet.</p>
+				@endforelse
+			</section>
+		</section>
 	</section>
 @elseif($tab === 'edit')
 	<section class="panel profile-edit-panel">
 		<div class="section-title"><div><p class="eyebrow">Your public information</p><h2>Edit profile</h2></div><a class="text-link" href="{{ route('profile.edit', ['tab' => 'settings']) }}">Back to settings</a></div>
-		<form method="POST" action="{{ route('profile.update') }}" class="form-stack">@csrf @method('PUT')
+		<form method="POST" action="{{ route('profile.update') }}" class="form-stack" enctype="multipart/form-data">@csrf @method('PUT')
+			<div class="profile-media-fields" id="profile-photo-settings">
+				<label>Profile picture<input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" data-profile-photo-input data-max-dimension="1200"><small>JPEG, PNG, or WebP up to 2 MB.</small></label>
+				@if($profileUser->profile?->profile_photo_path)<label class="check profile-remove-check"><input type="checkbox" name="remove_profile_photo" value="1"> Remove current profile picture</label>@endif
+				<label>Cover photo<input type="file" name="cover_photo" accept="image/jpeg,image/png,image/webp" data-profile-photo-input data-max-dimension="1920"><small>Wide images work best. Maximum 2 MB.</small></label>
+				@if($profileUser->profile?->cover_photo_path)<label class="check profile-remove-check"><input type="checkbox" name="remove_cover_photo" value="1"> Remove current cover photo</label>@endif
+			</div>
+			<p class="profile-upload-status" data-profile-upload-status role="status" aria-live="polite" hidden></p>
 			<label>Campus / dorm address<input name="campus_address" value="{{ old('campus_address', $profileUser->profile?->campus_address) }}" required></label>
 			<div class="two-col"><label>Grade / year<input name="grade_level" value="{{ old('grade_level', $profileUser->profile?->grade_level) }}" required></label><label>Course / major<input name="course_major" value="{{ old('course_major', $profileUser->profile?->course_major) }}" required></label></div>
 			<label>Bio<textarea name="bio" rows="5" maxlength="2000">{{ old('bio', $profileUser->profile?->bio) }}</textarea></label>

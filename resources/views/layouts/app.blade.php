@@ -1,9 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-design-theme="{{ auth()->check() ? auth()->user()->design_theme : 'modern' }}" data-design-palette="{{ auth()->check() ? auth()->user()->design_palette : 'campus' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'CampusConnect' }}</title>
+    <script>
+        (() => {
+            if (@json(auth()->check())) {
+                return;
+            }
+
+            try {
+                const appearance = JSON.parse(localStorage.getItem('campusconnect:appearance') || '{}');
+                const designs = ['modern', 'glass', 'skeuomorphic', 'brutalist', 'editorial'];
+                const palettes = ['campus', 'ocean', 'botanical', 'sunset', 'monochrome'];
+
+                if (designs.includes(appearance.theme)) {
+                    document.documentElement.dataset.designTheme = appearance.theme;
+                }
+
+                if (palettes.includes(appearance.palette)) {
+                    document.documentElement.dataset.designPalette = appearance.palette;
+                }
+            } catch {}
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="{{ auth()->check() ? 'workspace-page '.(request()->routeIs('dashboard') ? 'dashboard-page' : 'app-page') : (request()->routeIs('login') ? 'login-page' : 'app-page '.(request()->routeIs('register') ? 'register-page' : (request()->routeIs('home') ? 'home-page' : ''))) }}">

@@ -47,6 +47,15 @@
                 </span>
                 <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
             </a>
+            <a class="panel admin-quick-link" href="{{ route('admin.feedback.index') }}">
+                <span class="admin-quick-link-icon" aria-hidden="true">04</span>
+                <span class="admin-quick-link-copy">
+                    <span class="eyebrow">Community support</span>
+                    <strong>User feedback</strong>
+                    <span>Review concerns and suggestions from campus members.</span>
+                </span>
+                <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
+            </a>
             <a class="panel admin-quick-link" href="{{ route('admin.weather.index') }}">
                 <span class="admin-quick-link-icon" aria-hidden="true">03</span>
                 <span class="admin-quick-link-copy">

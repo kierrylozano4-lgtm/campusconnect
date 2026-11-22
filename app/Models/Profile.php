@@ -12,7 +12,7 @@ class Profile extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['user_id', 'campus_address', 'grade_level', 'course_major', 'facebook', 'instagram', 'tiktok', 'github', 'year_level', 'bio', 'verification_status'];
+    protected $fillable = ['user_id', 'campus_address', 'grade_level', 'course_major', 'facebook', 'instagram', 'tiktok', 'github', 'year_level', 'bio', 'verification_status', 'profile_photo_path', 'cover_photo_path'];
 
     public function user()
     {

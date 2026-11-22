@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\UserFeedback;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class AdminController extends Controller
 {
@@ -35,6 +37,28 @@ class AdminController extends Controller
         return view('admin.services', [
             'services' => Service::with('user')->latest()->get(),
         ]);
+    }
+
+    public function feedback(): View
+    {
+        return view('admin.feedback', [
+            'feedbackMessages' => UserFeedback::with('user')->latest()->paginate(25),
+            'unreadFeedbackCount' => UserFeedback::whereNull('read_at')->count(),
+        ]);
+    }
+
+    public function updateFeedbackStatus(Request $request, UserFeedback $userFeedback): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:In review,Resolved'],
+        ]);
+
+        $userFeedback->update([
+            'status' => $data['status'],
+            'read_at' => $userFeedback->read_at ?? now(),
+        ]);
+
+        return back()->with('status', 'Feedback marked as '.$data['status'].'.');
     }
 
     public function toggleRole(Request $request, User $user)
