@@ -93,8 +93,13 @@ class DashboardController extends Controller
     public function requestService(Request $request, Service $service)
     {
         abort_if($service->user_id === $request->user()->id, 403);
-        abort_if($service->status !== 'Active', 422, 'This service is inactive.');
-        abort_if(! $service->visible_in_dashboard, 404);
+
+        // Friendlier check instead of a raw 422 exception
+        if ($service->status !== 'Active' || ! $service->visible_in_dashboard) {
+            return back()->withErrors([
+                'service' => 'This service is no longer available.',
+            ]);
+        }
 
         $existingRequest = ServiceRequest::where('service_id', $service->id)
             ->where('requester_id', $request->user()->id)
