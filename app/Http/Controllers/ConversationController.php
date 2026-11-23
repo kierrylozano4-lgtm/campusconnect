@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\Notification;
 use App\Models\User;
 use App\Services\ConversationMessenger;
+use App\Services\Payments\PaymentManager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,10 +70,25 @@ class ConversationController extends Controller
             'secondParticipant',
             'messages.sender',
             'messages.serviceRequest.service',
+            'serviceRequests.service',
         ]);
         $otherUser = $conversation->otherParticipant($request->user());
+        $serviceRequest = $conversation->serviceRequests
+            ->sortByDesc('created_at')
+            ->first();
+        $transaction = $serviceRequest?->transaction()->with([
+            'agreement',
+            'submissions.files',
+            'revisions',
+            'confirmations',
+            'dispute.evidence',
+            'payout',
+        ])->latest('updated_at')->first();
+        $paymentManager = app(PaymentManager::class);
+        $mayaAvailable = $paymentManager->mayaAvailable();
+        $gcashAvailable = $paymentManager->gcashAvailable();
 
-        return view('conversations.show', compact('conversation', 'otherUser'));
+        return view('conversations.show', compact('conversation', 'otherUser', 'serviceRequest', 'transaction', 'mayaAvailable', 'gcashAvailable'));
     }
 
     public function store(Request $request, Conversation $conversation): RedirectResponse

@@ -41,6 +41,26 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000').'/auth/google/callback'),
     ],
 
+    'gcash' => [
+        'simulation_enabled' => filter_var(env('GCASH_SIMULATION_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'environment' => env('GCASH_ENVIRONMENT', 'sandbox'),
+        'currency' => env('GCASH_CURRENCY', 'PHP'),
+        'callback_url' => env('GCASH_CALLBACK_URL'),
+    ],
+
+    'maya' => [
+        'enabled' => filter_var(env('MAYA_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'environment' => env('MAYA_ENVIRONMENT', 'sandbox'),
+        'public_key' => env('MAYA_PUBLIC_KEY'),
+        'secret_key' => env('MAYA_SECRET_KEY'),
+        'checkout_endpoint' => env('MAYA_CHECKOUT_ENDPOINT'),
+        'base_url' => env('MAYA_BASE_URL'),
+        'webhook_public_key_1' => env('MAYA_WEBHOOK_PUBLIC_KEY_1'),
+        'webhook_public_key_2' => env('MAYA_WEBHOOK_PUBLIC_KEY_2'),
+        'currency' => env('MAYA_CURRENCY', 'PHP'),
+        'callback_url' => env('MAYA_CALLBACK_URL'),
+    ],
+
     'weather' => [
         'api_key' => env('OPENWEATHER_API_KEY'),
         'city' => env('OPENWEATHER_CITY', 'Manila'),

@@ -38,6 +38,35 @@ if (bulkUserForm) {
     });
 }
 
+const lifecycleToggle = document.querySelector('[data-lifecycle-toggle]');
+
+if (lifecycleToggle) {
+    lifecycleToggle.addEventListener('click', () => {
+        const content = document.querySelector('[data-lifecycle-content]');
+        const chevron = lifecycleToggle.querySelector('[data-lifecycle-chevron]');
+        const expanded = lifecycleToggle.getAttribute('aria-expanded') === 'true';
+
+        lifecycleToggle.setAttribute('aria-expanded', String(!expanded));
+        content.hidden = expanded;
+        chevron.textContent = expanded ? '⌄' : '⌃';
+    });
+}
+
+for (const trigger of document.querySelectorAll('[data-open-dialog]')) {
+    trigger.addEventListener('click', () => {
+        const dialog = document.getElementById(trigger.dataset.openDialog);
+        dialog?.showModal();
+    });
+}
+
+for (const dialog of document.querySelectorAll('dialog.transaction-dialog')) {
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) {
+            dialog.close();
+        }
+    });
+}
+
 const conversationMessages = document.querySelector('.conversation-messages');
 
 if (conversationMessages) {

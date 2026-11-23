@@ -8,10 +8,14 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\MayaWebhookController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'pages.welcome')->name('home');
+Route::post('/payments/maya/webhook', MayaWebhookController::class)->name('payments.maya.webhook');
 Route::get('/login', [AuthController::class, 'loginForm'])->middleware('guest')->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::get('/register', [AuthController::class, 'registerForm'])->middleware('guest')->name('register');
@@ -42,6 +46,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'store'])->name('conversations.messages.store');
     Route::get('/chat/{serviceRequest}', [ChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{serviceRequest}', [ChatController::class, 'store'])->name('chat.store');
+    Route::post('/transactions/{transaction}/start', [TransactionController::class, 'start'])->name('transactions.start');
+    Route::post('/transactions/{transaction}/submit', [TransactionController::class, 'submit'])->name('transactions.submit');
+    Route::get('/submission-files/{submissionFile}', [TransactionController::class, 'downloadSubmissionFile'])->name('submission-files.download');
+    Route::post('/transactions/{transaction}/accept', [TransactionController::class, 'accept'])->name('transactions.accept');
+    Route::post('/transactions/{transaction}/revise', [TransactionController::class, 'revise'])->name('transactions.revise');
+    Route::post('/transactions/{transaction}/acknowledge', [TransactionController::class, 'acknowledge'])->name('transactions.acknowledge');
+    Route::post('/transactions/{transaction}/dispute', [TransactionController::class, 'openDispute'])->name('transactions.dispute.open');
+    Route::post('/transactions/{transaction}/dispute/evidence', [TransactionController::class, 'addDisputeEvidence'])->name('transactions.dispute.evidence');
+    Route::get('/dispute-evidence/{evidence}', [TransactionController::class, 'downloadEvidence'])->name('dispute-evidence.download');
+    Route::post('/transactions/{transaction}/payment/maya', [PaymentController::class, 'maya'])->name('transactions.payment.maya');
+    Route::post('/transactions/{transaction}/payment/gcash', [PaymentController::class, 'gcash'])->name('transactions.payment.gcash');
+    Route::get('/payments/maya/callback', [PaymentController::class, 'mayaCallback'])->name('payments.maya.callback');
+    Route::get('/payments/gcash/callback', [PaymentController::class, 'gcashSimulation'])->name('payments.gcash.simulation');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -49,6 +66,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/users', [AdminController::class, 'users'])->name('users.index');
     Route::get('/services', [AdminController::class, 'services'])->name('services.index');
     Route::get('/feedback', [AdminController::class, 'feedback'])->name('feedback.index');
+    Route::get('/transactions', [AdminController::class, 'transactions'])->name('transactions.index');
+    Route::get('/transactions/{transaction}', [AdminController::class, 'transactionShow'])->name('transactions.show');
+    Route::get('/disputes', [AdminController::class, 'disputes'])->name('disputes.index');
+    Route::get('/financials', [AdminController::class, 'financials'])->name('financials.index');
+    Route::post('/transactions/{transaction}/payout/authorize', [AdminController::class, 'authorizePayout'])->name('payouts.authorize');
+    Route::post('/transactions/{transaction}/payout/complete', [AdminController::class, 'completePayout'])->name('payouts.complete');
+    Route::post('/transactions/{transaction}/refund/request', [AdminController::class, 'requestRefund'])->name('refunds.request');
+    Route::post('/transactions/{transaction}/refund/complete', [AdminController::class, 'completeRefund'])->name('refunds.complete');
+    Route::post('/transactions/{transaction}/dispute/resolve', [AdminController::class, 'resolveDispute'])->name('disputes.resolve');
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
     Route::get('/weather/data', [WeatherController::class, 'show'])->name('weather.data');
     Route::patch('/users/bulk', [AdminController::class, 'bulkUpdateUsers'])->name('users.bulk');

@@ -47,6 +47,15 @@
                 </span>
                 <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
             </a>
+            <a class="panel admin-quick-link" href="{{ route('admin.transactions.index') }}">
+                <span class="admin-quick-link-icon" aria-hidden="true">05</span>
+                <span class="admin-quick-link-copy">
+                    <span class="eyebrow">Transaction operations</span>
+                    <strong>Manage transactions</strong>
+                    <span>Inspect payments, work progress, disputes, refunds, and payouts.</span>
+                </span>
+                <span class="admin-quick-link-arrow" aria-hidden="true">→</span>
+            </a>
             <a class="panel admin-quick-link" href="{{ route('admin.feedback.index') }}">
                 <span class="admin-quick-link-icon" aria-hidden="true">04</span>
                 <span class="admin-quick-link-copy">

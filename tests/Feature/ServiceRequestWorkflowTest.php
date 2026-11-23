@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Service;
 use App\Models\ServiceRequest;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,21 @@ class ServiceRequestWorkflowTest extends TestCase
         $this->assertDatabaseHas('service_requests', [
             'id' => $serviceRequest->id,
             'status' => 'Accepted',
+        ]);
+
+        $this->assertDatabaseHas('transactions', [
+            'service_request_id' => $serviceRequest->id,
+            'client_id' => $requester->id,
+            'freelancer_id' => $provider->id,
+            'payment_status' => 'PAYMENT_REQUIRED',
+            'work_status' => 'NOT_STARTED',
+            'lifecycle_status' => 'ORDER_CREATED',
+        ]);
+        $transaction = Transaction::query()->where('service_request_id', $serviceRequest->id)->firstOrFail();
+        $this->assertDatabaseHas('transaction_agreements', [
+            'transaction_id' => $transaction->id,
+            'title' => $service->title,
+            'revision_limit' => 2,
         ]);
 
         $this->assertDatabaseHas('notifications', [

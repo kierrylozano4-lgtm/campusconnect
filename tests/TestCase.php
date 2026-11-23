@@ -3,12 +3,19 @@
 namespace Tests;
 
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use PDO;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(PreventRequestForgery::class);
+    }
+
     public function createApplication(): Application
     {
         if (! in_array('sqlite', PDO::getAvailableDrivers(), true)) {

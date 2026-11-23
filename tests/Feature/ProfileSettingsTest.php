@@ -6,10 +6,13 @@ use App\Models\Review;
 use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ProfileSettingsTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_public_profile_shows_feedback_and_settings_are_private_to_the_owner(): void
     {
         $provider = User::factory()->create();

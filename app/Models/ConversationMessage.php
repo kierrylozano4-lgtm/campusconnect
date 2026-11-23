@@ -19,6 +19,7 @@ class ConversationMessage extends Model
         'receiver_id',
         'message',
         'type',
+        'activity_key',
         'read_at',
     ];
 

@@ -6,13 +6,17 @@ use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\ConversationMessenger;
+use App\Services\TransactionLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
-    public function __construct(private ConversationMessenger $messenger) {}
+    public function __construct(
+        private ConversationMessenger $messenger,
+        private TransactionLifecycleService $transactions,
+    ) {}
 
     public function index(Request $request)
     {
@@ -150,6 +154,10 @@ class DashboardController extends Controller
             }
 
             $lockedRequest->update(['status' => $data['status']]);
+
+            if ($data['status'] === 'Accepted') {
+                $this->transactions->createForServiceRequest($lockedRequest);
+            }
 
             $this->messenger->recordEvent(
                 $lockedRequest,

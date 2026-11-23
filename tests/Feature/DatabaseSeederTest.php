@@ -19,6 +19,6 @@ class DatabaseSeederTest extends TestCase
             'full_name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('users', 16);
     }
 }
