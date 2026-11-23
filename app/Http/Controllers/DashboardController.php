@@ -27,6 +27,14 @@ class DashboardController extends Controller
         $services = Service::with('user')
             ->where('status', 'Active')
             ->where('visible_in_dashboard', true)
+            ->whereHas('user') // skip services whose user was deleted
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($userQuery) => $userQuery->where('full_name', 'like', "%{$search}%"));
+                });
+            })
             ->when($category, fn ($query) => $query->where('category', $category))
             ->latest()
             ->get();

@@ -51,16 +51,21 @@
                     <span class="service-card-link-hint">View details <span aria-hidden="true">→</span></span>
                 </a>
                 <footer>
-                    <span class="provider-mark">{{ $service->user->initials() }}</span>
-                    <span class="provider-name">{{ $service->user->full_name }}</span>
-                    <a class="provider-profile-link" href="{{ route('profile.show', $service->user) }}" aria-label="View {{ $service->user->full_name }}'s profile">Profile</a>
-                    @if($service->user_id === auth()->id())
-                        <span class="muted service-owner">Your service</span>
+                    @if($service->user)
+                        <span class="provider-mark">{{ $service->user->initials() }}</span>
+                        <span class="provider-name">{{ $service->user->full_name }}</span>
+                        <a class="provider-profile-link" href="{{ route('profile.show', $service->user) }}" aria-label="View {{ $service->user->full_name }}'s profile">Profile</a>
+                        @if($service->user_id === auth()->id())
+                            <span class="muted service-owner">Your service</span>
+                        @else
+                            <form method="POST" action="{{ route('services.request', $service) }}">
+                                @csrf
+                                <button class="button button-small" type="submit">Request help</button>
+                            </form>
+                        @endif
                     @else
-                        <form method="POST" action="{{ route('services.request', $service) }}">
-                            @csrf
-                            <button class="button button-small" type="submit">Request help</button>
-                        </form>
+                        <span class="provider-mark">?</span>
+                        <span class="provider-name muted">Unknown provider</span>
                     @endif
                 </footer>
             </article>
